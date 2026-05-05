@@ -20,17 +20,17 @@ def tidy(s: str) -> str:
     s = whitespaceRegex.sub(" ", s)
     return s.strip()
 
-def testForDigits(s: str) -> bool:
+def testForDigits(s: str) -> bool: # Returns True if input has digits in it, otherwise False
     return bool(digitRegex.search(s))
 
-def splitToList(s: str):
+def splitToList(s: str): # Takes in comma-sperated-values and returns the input converted into a list
     if "," in s:
         parts = [tidy(p) for p in s.split(",") if p.strip()]
         if parts:
             return parts
     return [s]
 
-def convertToTitleCase(s: str) -> str:
+def convertToTitleCase(s: str) -> str: # Takes in any string and returns it with every word capitalized
     words = s.split()
     result_words = []
     for w in words:
@@ -42,15 +42,16 @@ def convertToTitleCase(s: str) -> str:
 
 
 def processClipboard(
-    splitCommaEnabled=True,
-    ddedupEnabled=True,
-    fuzzyEnabled=True,
-    titleCaseEnabled=True,
-    alphSortEnabled=True,
-    dequantifyEnabled=True,
-    fuzzyThreshhold=defaultFuzzyThreshhold,
+    # Default toggles
+    splitCommaEnabled = True,
+    dedupEnabled      = True,
+    fuzzyEnabled      = True,
+    titleCaseEnabled  = True,
+    alphSortEnabled   = True,
+    dequantifyEnabled = True,
+    fuzzyThreshhold = defaultFuzzyThreshhold,
 ):
-    text = pyperclip.paste()
+    text = pyperclip.paste() # Gets user's clipboard
     if not text:
         return "⚠  Clipboard is empty."
 
@@ -59,29 +60,29 @@ def processClipboard(
     items = []
     for row in reader:
         for cell in row:
-            if not cell:
+            if not cell: # If blank, skip
                 continue
-            for part in newlineRegex.split(cell):
+            for part in newlineRegex.split(cell): # Splits clipboard text by newlines
                 part = tidy(part)
                 if not part:
                     continue
                 if splitCommaEnabled:
-                    for subpart in splitToList(part):
+                    for subpart in splitToList(part): # Splits clipboard text by commas if enabled
                         items.append(subpart)
                 else:
                     items.append(part)
                     
     # Remove blank lines
-    items = [item for item in items if item.strip()]
+    items = [item for item in items if item.strip()] # lol
 
     if dequantifyEnabled:
-        # Matches: (X2), x2, X 2, (x 2), (5), ( 5 ), x 7, etc.
+        # Matches (X2), x2, X 2, (x 2), (5), ( 5 ), x 7, etc.
         items = [tidy(quantifierRegex.sub("", item)) for item in items]
 
     # Remove any items that became empty after dequantify
     items = [item for item in items if item]
 
-    if ddedupEnabled:
+    if dedupEnabled: # Scans through every item in the list and compares it to every value in unique. If there's no mathc, adds that value to unique. Otherwise, skips.
         unique = []
         existingValues = set()
         for item in items:
@@ -106,14 +107,14 @@ def processClipboard(
     else:
         unique = list(items)
 
-    if titleCaseEnabled:
+    if titleCaseEnabled: # Applies titlecase
         unique = [convertToTitleCase(u) for u in unique]
 
-    if alphSortEnabled:
+    if alphSortEnabled: # Applies Alph sorting
         unique = sorted(unique, key=lambda x: x.lower())
 
-    out = "\n".join(unique)
-    pyperclip.copy(out)
+    out = "\n".join(unique) # Sets the output text to every list value after the operations, with each item on a newline.
+    pyperclip.copy(out) # Copies output text to clipboard
     return f"✓  {len(items)} -> {len(unique)} items copied to clipboard."
 
 
@@ -152,14 +153,14 @@ class Tooltip:
 
 class ClipboardCleanerApp(tk.Tk):
     # Colors
-    backgroundCLR      = "#181825"
-    OnBtnBackgroundCLR  = "#e94560"
-    OffBtnBackgroundCLR = "#252535"
+    backgroundCLR        = "#181825"
+    OnBtnBackgroundCLR   = "#e94560"
+    OffBtnBackgroundCLR  = "#252535"
     OnBtnForegroundCLR   = "#ffffff"
     OffBtnForegroundCLR  = "#44445a"
-    statusBG  = "#11111b"
-    statusTextCLR   = "#e94560"
-    dividerCLR = "#2a2a3e"
+    statusBG             = "#11111b"
+    statusTextCLR        = "#e94560"
+    dividerCLR           = "#2a2a3e"
 
     def __init__(self):
         super().__init__()
@@ -168,20 +169,23 @@ class ClipboardCleanerApp(tk.Tk):
         self.attributes("-topmost", True)
         self.configure(bg=self.backgroundCLR)
 
-        self.splitComma = tk.BooleanVar(value=True)
-        self.deduplicate = tk.BooleanVar(value=True)
-        self.fuzzy       = tk.BooleanVar(value=True)
-        self.titleCase  = tk.BooleanVar(value=True)
-        self.alphSort  = tk.BooleanVar(value=True)
-        self.dequantify= tk.BooleanVar(value=True)
+        self.splitComma       = tk.BooleanVar(value=True)
+        self.deduplicate      = tk.BooleanVar(value=True)
+        self.fuzzy            = tk.BooleanVar(value=True)
+        self.titleCase        = tk.BooleanVar(value=True)
+        self.alphSort         = tk.BooleanVar(value=True)
+        self.dequantify       = tk.BooleanVar(value=True)
         self.fuzzyThreshhold  = tk.IntVar(value=defaultFuzzyThreshhold)
 
         self._btns = {}
         self._buildUI()
 
     def _buildUI(self):
-        bar = tk.Frame(self, bg=self.backgroundCLR, padx=6, pady=6)
-        bar.pack(fill="x")
+        bar = tk.Frame(self, 
+                       bg = self.backgroundCLR, 
+                       padx = 6, 
+                       pady = 6)
+        bar.pack(fill = "x")
 
         # (display text, font, value, tooltip)
         # font: "emoji" uses Segoe UI Emoji 14, "label" uses Consolas 11 bold
@@ -212,13 +216,14 @@ class ClipboardCleanerApp(tk.Tk):
             f = emojiFont if ftype == "emoji" else labelFont
             button = tk.Button(
                 bar,
-                text=icon,
-                font=f,
-                width=2,
-                relief="flat",
-                cursor="hand2",
-                padx=3, pady=3,
-                command=lambda v=var: self._toggle(v),
+                text   = icon,
+                font   = f,
+                width  = 2,
+                relief = "flat",
+                cursor = "hand2",
+                padx   = 3, 
+                pady   = 3,
+                command = lambda v = var: self._toggle(v),
             )
             button.pack(side="left", padx=2)
             self._btns[id(var)] = (button, var)
@@ -226,23 +231,28 @@ class ClipboardCleanerApp(tk.Tk):
             Tooltip(button, tip)
 
         # dividerCLR
-        tk.Frame(bar, bg=self.dividerCLR, width=1).pack(
-            side="left", fill="y", padx=7, pady=3
+        tk.Frame(bar, bg = self.dividerCLR, width=1).pack(
+            side = "left", 
+            fill = "y", 
+            padx = 7, 
+            pady = 3
         )
 
-        # Fuzz spinbox
+        # Fuzzy spinbox
         spin = tk.Spinbox(
             bar,
-            from_=0, to=100,
-            textvariable=self.fuzzyThreshhold,
-            width=3,
-            font=("Consolas", 11, "bold"),
-            bg=self.OffBtnBackgroundCLR, fg=self.OnBtnBackgroundCLR,
-            buttonbackground=self.OffBtnBackgroundCLR,
-            relief="flat",
-            highlightthickness=1,
-            highlightbackground="#333355",
-            insertbackground=self.OnBtnBackgroundCLR,
+            from_               = 0, 
+            to                  = 100,
+            textvariable        = self.fuzzyThreshhold,
+            width               = 3,
+            font                = ("Consolas", 11, "bold"),
+            bg                  = self.OffBtnBackgroundCLR, 
+            fg                  = self.OnBtnBackgroundCLR,
+            buttonbackground    = self.OffBtnBackgroundCLR,
+            relief              = "flat",
+            highlightthickness  = 1,
+            highlightbackground = "#333355",
+            insertbackground    = self.OnBtnBackgroundCLR,
         )
         spin.pack(side="left", padx=(0, 5))
         spin.bind("<MouseWheel>", self._scrollChangeFuzzy)
@@ -252,41 +262,40 @@ class ClipboardCleanerApp(tk.Tk):
 
         # dividerCLR
         tk.Frame(bar, bg=self.dividerCLR, width=1).pack(
-            side="left", fill="y", padx=7, pady=3
+            side = "left", 
+            fill = "y", 
+            padx = 7, 
+            pady = 3
         )
 
         # Run button
         run = tk.Button(
             bar,
-            text="\u25b6",
-            font=("Segoe UI Emoji", 14),
-            bg=self.OnBtnBackgroundCLR, fg="white",
-            activebackground=self.OnBtnBackgroundCLR, activeforeground="white",
-            relief="flat", cursor="hand2",
-            padx=6, pady=3,
-            command=self._run,
+            text             = "\u25b6",
+            font             = ("Segoe UI Emoji", 14),
+            bg               = self.OnBtnBackgroundCLR, 
+            fg               = "white",
+            activebackground = self.OnBtnBackgroundCLR, activeforeground="white",
+            relief           = "flat", 
+            cursor           = "hand2",
+            padx             = 6, 
+            pady             = 3,
+            command          = self._run,
         )
-        run.pack(side="left", padx=(0, 2))
+        run.pack(side = "left", padx = (0, 2))
         Tooltip(run, "Clean clipboard\nProcess and copy result to clipboard")
 
-        # status bar
+        # Status bar
         self.statusText = tk.StringVar(value="Ready.")
         tk.Label(
             self,
-            textvariable=self.statusText,
-            bg=self.statusBG, fg=self.OnBtnBackgroundCLR,
-            font=("Consolas", 8),
-            anchor="w", padx=8, pady=3,
-        ).pack(fill="x")
-
-        # Attribution bar
-        self.attribution_bar = tk.StringVar(value="A tool by Ezra Kesti")
-        tk.Label(
-            self,
-            textvariable=self.attribution_bar,
-            bg=self.statusBG, fg=self.OnBtnBackgroundCLR,
-            font=("Consolas", 6),
-            anchor="center", padx=8, pady=2,
+            textvariable = self.statusText,
+            bg           = self.statusBG, 
+            fg           = self.OnBtnBackgroundCLR,
+            font         = ("Consolas", 8),
+            anchor       = "w", 
+            padx         = 8, 
+            pady         = 3,
         ).pack(fill="x")
 
     def _toggle(self, var: tk.BooleanVar):
@@ -297,13 +306,17 @@ class ClipboardCleanerApp(tk.Tk):
         button, v = self._btns[id(var)]
         if v.get():
             button.config(
-                bg=self.OnBtnBackgroundCLR, fg=self.OnBtnForegroundCLR,
-                activebackground=self.OnBtnBackgroundCLR, activeforeground="white",
+                bg = self.OnBtnBackgroundCLR, 
+                fg = self.OnBtnForegroundCLR,
+                activebackground = self.OnBtnBackgroundCLR, 
+                activeforeground = "white",
             )
         else:
             button.config(
-                bg=self.OffBtnBackgroundCLR, fg=self.OffBtnForegroundCLR,
-                activebackground=self.OffBtnBackgroundCLR, activeforeground=self.OffBtnForegroundCLR,
+                bg = self.OffBtnBackgroundCLR, 
+                fg = self.OffBtnForegroundCLR,
+                activebackground = self.OffBtnBackgroundCLR, 
+                activeforeground = self.OffBtnForegroundCLR,
             )
 
     def _scrollChangeFuzzy(self, event):
@@ -316,13 +329,14 @@ class ClipboardCleanerApp(tk.Tk):
         self.statusText.set("Processing...")
         self.update_idletasks()
         msg = processClipboard(
+            # These all update the toggle variables to match the buttons
             splitCommaEnabled = self.splitComma.get(),
-            ddedupEnabled = self.deduplicate.get(),
-            fuzzyEnabled = self.fuzzy.get(),
-            titleCaseEnabled = self.titleCase.get(),
-            alphSortEnabled = self.alphSort.get(),
+            dedupEnabled      = self.deduplicate.get(),
+            fuzzyEnabled      = self.fuzzy.get(),
+            titleCaseEnabled  = self.titleCase.get(),
+            alphSortEnabled   = self.alphSort.get(),
             dequantifyEnabled = self.dequantify.get(),
-            fuzzyThreshhold = self.fuzzyThreshhold.get(),
+            fuzzyThreshhold   = self.fuzzyThreshhold.get(),
         )
         self.statusText.set(msg)
 
