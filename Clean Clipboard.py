@@ -11,8 +11,8 @@ defaultFuzzyThreshhold = 85
 
 # --- Regex codes ---
 whitespaceRegex = re.compile(r"\s+")
-newlineRegex = re.compile(r"\r\n|\r|\n")
-digitRegex = re.compile(r"\d")
+newlineRegex    = re.compile(r"\r\n|\r|\n")
+digitRegex      = re.compile(r"\d")
 quantifierRegex = re.compile(r"\s*\(?\s*[xX]\s*\d+\s*\)?|\s*\(\s*\d+\s*\)", re.IGNORECASE)
 
 def tidy(s: str) -> str:
@@ -80,17 +80,19 @@ def processClipboard(
         items = [tidy(quantifierRegex.sub("", item)) for item in items]
 
     # Remove any items that became empty after dequantify
-    items = [item for item in items if item]
+    items = [item for item in items if item.strip()]
 
-    if dedupEnabled: # Scans through every item in the list and compares it to every value in unique. If there's no mathc, adds that value to unique. Otherwise, skips.
+    if dedupEnabled:
         unique = []
-        existingValues = set()
+        seen_normalized = set()  # track ALL seen items, not just non-fuzzy ones
+
         for item in items:
-            normalItem = item.lower().replace("''", "")
+            normalItem = item.lower()  # Bug fix: remove the inconsistent replace("''","")
+            
             if testForDigits(item) or not fuzzyEnabled:
-                if normalItem in existingValues:
+                if normalItem in seen_normalized:
                     continue
-                existingValues.add(normalItem)
+                seen_normalized.add(normalItem)
                 unique.append(item)
             else:
                 isDuplicate = False
@@ -102,7 +104,7 @@ def processClipboard(
                         isDuplicate = True
                         break
                 if not isDuplicate:
-                    existingValues.add(normalItem)
+                    seen_normalized.add(normalItem)  # Bug fix: always add to seen set
                     unique.append(item)
     else:
         unique = list(items)
