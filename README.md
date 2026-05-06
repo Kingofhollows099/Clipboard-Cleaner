@@ -118,3 +118,5 @@ Items containing numbers are excluded from fuzzy matching and are always dedupli
 - Operations run in a fixed order regardless of which are enabled: Split → Dequantify → Deduplicate/Fuzzy → Title Case → Sort
 - Running the tool multiple times on the same input will always produce the same result
 - The window stays on top of other applications
+
+AI usage: Claude was used to modify the readme, as well as to debug.
