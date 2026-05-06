@@ -46,8 +46,6 @@ One, Two, Three  →  One
                      Three
 ```
 
-Handles quoted strings correctly, so commas inside quotes are not treated as separators.
-
 ---
 
 ### x2 Dequantify
@@ -113,10 +111,5 @@ When a duplicate is found, the **first-seen version** of the item is kept and th
 Items containing numbers are excluded from fuzzy matching and are always deduplicated by exact match only. This prevents part numbers, quantities, or codes from being incorrectly collapsed.
 
 ---
-
-## Notes
-- Operations run in a fixed order regardless of which are enabled: Split → Dequantify → Deduplicate/Fuzzy → Title Case → Sort
-- Running the tool multiple times on the same input will always produce the same result
-- The window stays on top of other applications
 
 AI usage: Claude was used to modify the readme, as well as to debug.
