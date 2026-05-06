@@ -1,117 +1,120 @@
-# A tool helpful for working with spreadsheets! Mainly meant for working with lists, but can be useful for other things as well.
-The program works as follows:
-1: Imports whatever you have in your clipboard
-2: Applies any operations you have enabled
-3: Recopies the fixed-up list back to the clipboard.
+# Clipboard Cleaner
+A small utility for cleaning up lists. Copy something, click run, get a cleaned-up version back on your clipboard. Designed for working with spreadsheet data but works on anything list-like.
 
-# Example:
-- You copy some text
+## Requirements
+(Only applies if you're running the python file rather than the exe)
+```
+pip install pyperclip rapidfuzz
+```
 
-    Apple, Orange
-  
-    Bannana
-  
-    Pineapple (x2)
-  
-- You click the run button, with all features enabled
-- It copies the fixed list back to you clipboard
+## How It Works
+1. Reads whatever is in your clipboard
+2. Applies whichever operations you have enabled, in this order:
+   - Split on commas → Dequantify → Deduplicate → Title Case → Sort Alphabetically
+3. Copies the result back to your clipboard
 
-  Apple
-  
-  Orange
-  
-  Bannana
-  
-  Pineapple
+Input can be plain text (one item per line), comma-separated values, or tab-separated data copied directly from a spreadsheet.
 
-# Available Operations:
-### Split on commas
-<img width="51" height="62" alt="image" src="https://github.com/user-attachments/assets/9a1b7bbf-fb6b-48f7-aaa6-5bf17b77ab84" />
-Seperates comma-seperated values into individual items
+## Example
 
-Ex: One, Two, Three ->
+You copy:
+```
+Apple, Orange
+Bannana
+apple
+Pineapple (x2)
+```
 
-One
+With all features enabled, you get:
+```
+Apple
+Bannana
+Orange
+Pineapple
+```
 
-Two 
+---
 
-Three
+## Operations
 
-### Dequantify
-<img width="48" height="60" alt="image" src="https://github.com/user-attachments/assets/b82aa592-82af-4622-bff9-831c3514e440" />
-Removes quantifiers
+### ✂ Split on Commas
+Splits comma-separated values into individual items.
 
-Ex: 
+```
+One, Two, Three  →  One
+                     Two
+                     Three
+```
 
-Glorp (x50)
+Handles quoted strings correctly, so commas inside quotes are not treated as separators.
 
-Oompta (x10) ->
+---
 
-Glorp
+### x2 Dequantify
+Removes quantity suffixes from items.
 
-Oompta
+Supported formats: `x2`, `X2`, `(x2)`, `(x 2)`, `(2)`, `x 50`, etc.
 
-### Deduplicate
-<img width="48" height="60" alt="image" src="https://github.com/user-attachments/assets/bc4f030b-61b4-4198-a141-1606d7e9d173" />
-Removes values that are identical
-Ex:
+```
+Glorp (x50)  →  Glorp
+Oompta x10   →  Oompta
+```
 
-Soda
+---
 
-Soda
+### 🧹 Deduplicate
+Removes exact duplicate items (case-insensitive).
 
-Tea
-
-Water ->
-
-Soda
-
-Tea
-
+```
+Soda   →  Soda
+Soda      Tea
+Tea       Water
 Water
+```
 
-### Title Case
-<img width="48" height="63" alt="image" src="https://github.com/user-attachments/assets/0a5d8e46-6770-4bce-974d-ea142fc39d3d" />
-Capitalizes the first letter of each word
+Works together with Fuzzy Match to also catch near-duplicates — see below.
 
-Ex:
+---
 
-Not a thing
+### Aa Title Case
+Capitalizes the first letter of each word. Leaves all-uppercase words (like acronyms) and words containing numbers unchanged.
 
-a thing
+```
+not a thing      →  Not A Thing
+a thing              A Thing
+kind of a Thing      Kind Of A Thing
+RGB LED              RGB LED
+```
 
-kind of a Thing ->
+---
 
-Not A Thing
+### 🔤 Sort Alphabetically
+Sorts items A–Z, case-insensitively.
 
-A Thing
+```
+George    →  Brandon
+Brandon      George
+Henry        Henry
+```
 
-Kind Of A Thing
+---
 
-### Sort Alphabetically
-<img width="47" height="60" alt="image" src="https://github.com/user-attachments/assets/6e4971d9-258b-4e82-bdde-c945bec280a4" />
-Sorta things alphabetically
+### ~% Fuzzy Match
+Catches near-duplicates that exact deduplication would miss — useful for typos, minor punctuation differences, or inconsistent spacing.
 
-Ex:
+The number to the right of the button is the **similarity threshold** (0–100). An incoming item is treated as a duplicate if its similarity score against any already-accepted item meets or exceeds this value.
 
-George
+- **85** (default) — catches clear typos and small differences, e.g. `Bannana` vs `Banana`
+- **Higher values** (90–100) — stricter; only collapses very close matches
+- **Lower values** (70–80) — more aggressive; may collapse items that are actually distinct
 
-Brandon
+When a duplicate is found, the **first-seen version** of the item is kept and the new one is discarded.
 
-Henry ->
+Items containing numbers are excluded from fuzzy matching and are always deduplicated by exact match only. This prevents part numbers, quantities, or codes from being incorrectly collapsed.
 
-Brandon
+---
 
-George
-
-Henry
-
-### Fuzzy match
-<img width="128" height="61" alt="image" src="https://github.com/user-attachments/assets/5b2a3a8d-86b9-4690-8477-842a13739e64" />
-Helps get rid of typos or small punctuation differences by scanning every list item. The box on the right allows you to adjust the similarity threshold. 
-
-This will cycle through every item in the list, and for each do the following:
-- If its similarty value to any item in the unique list is greater than the threshold you have set, merges the new value with the old one.
-- If it's similarity threshold is not above the threshold, it adds it to the unique list
-
-Note: This will ignore any list items that contain numbers.
+## Notes
+- Operations run in a fixed order regardless of which are enabled: Split → Dequantify → Deduplicate/Fuzzy → Title Case → Sort
+- Running the tool multiple times on the same input will always produce the same result
+- The window stays on top of other applications
